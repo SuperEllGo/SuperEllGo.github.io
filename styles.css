@@ -1,0 +1,56 @@
+background: #072400;
+background: linear-gradient(90deg, rgba(7, 36, 0, 1) 0%, rgba(9, 9, 121, 1) 50%, rgba(0, 212, 255, 1) 100%);
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+img {
+  margin: 15px;
+}
+
+h2, h4, p {
+  margin: 10px;
+}
+
+
+.navbar ul {
+  display: flex;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+
+.navbar a {
+  display: block;
+  color: white;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+}
+hr {
+  border-top: 3px dotted gold;
+  border-bottom: 0px;
+}
+
+.vbar ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 200px;
+  background-color: #333333;
+}
+
+.vbar li a {
+  display: block;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+/* Change the link and background color on hover */
+.vbar li a:hover {
+  background-color: #555555;
+  color: white;
