@@ -15,14 +15,14 @@
 <body>
 
 <div class="container">
-    <h2>Race Timing System</h2>
-    <button id="startBtn" class="start-btn" onclick="startRace()">🚀 START RACE (Time Zero)</button>
+    <h2>Timing CDP</h2>
+    <button id="startBtn" class="start-btn" onclick="startRace()"> Commencé le chrono (Time Zero)</button>
     <div id="clock" style="font-size: 32px; margin: 10px 0;">00:00:00</div>
     
     <input type="number" id="bibInput" placeholder="Enter Bib #" autofocus disabled>
     <p>Press <strong>ENTER</strong> to record finish</p>
     
-    <button onclick="downloadCSV()">📥 Download Results (CSV)</button>
+    <button onclick="downloadCSV()"> Enrigistré les résultats (CSV)</button>
 
     <table id="results">
         <thead>
@@ -38,15 +38,15 @@
 </div>
 
 <script>
-    let raceStartTime = null;
+let raceStartTime = null;
     let timerInterval = null;
+    let rawData = []; // Array to store race data for sorting
 
     function startRace() {
         raceStartTime = Date.now();
         document.getElementById('startBtn').disabled = true;
         document.getElementById('bibInput').disabled = false;
         document.getElementById('bibInput').focus();
-        
         timerInterval = setInterval(updateClock, 100);
     }
 
@@ -62,9 +62,8 @@
         return `${h}:${m}:${s}`;
     }
 
-    // Logic for Wave Offsets based on your ranges
     function getOffset(bib) {
-        // 2km Ranges
+        // 2km Logic
         if (bib >= 0 && bib <= 30) return 0;
         if (bib >= 31 && bib <= 60) return 30;
         if (bib >= 91 && bib <= 120) return 60;
@@ -74,17 +73,17 @@
         if (bib >= 211 && bib <= 250) return 180;
         if (bib >= 251 && bib <= 300) return 210;
 
-        // 5km Ranges
-        if (bib >= 330 && bib <= 330) return 0; // Adjusted for your 330 start
+        // 5km Logic
+        if (bib >= 330 && bib <= 330) return 0;
         if (bib >= 331 && bib <= 360) return 30;
         if (bib >= 391 && bib <= 420) return 60;
         if (bib >= 421 && bib <= 450) return 90;
-        if (bib >= 451 && bib <= 480) return 120;
+        if (bib >= 451 && bib <= 481) return 120; // Adjusted range typo
         if (bib >= 481 && bib <= 510) return 150;
         if (bib >= 511 && bib <= 550) return 180;
         if (bib >= 551 && bib <= 599) return 210;
         
-        return 0; // Default
+        return 0;
     }
 
     document.getElementById('bibInput').addEventListener('keypress', function (e) {
@@ -96,6 +95,9 @@
             let offset = getOffset(bib);
             let netTime = finishTime - offset;
 
+            // Store data in our array
+            rawData.push({ bib, finishTime, offset, netTime });
+
             let row = `<tr>
                 <td>${bib}</td>
                 <td>${formatTime(finishTime)}</td>
@@ -104,24 +106,41 @@
             </tr>`;
             
             document.getElementById('resultsBody').insertAdjacentHTML('afterbegin', row);
-            this.value = ''; // Clear input for next runner
+            this.value = ''; 
         }
     });
 
     function downloadCSV() {
-        let csv = "Bib,Clock Time,Offset,Net Time\n";
-        let rows = document.querySelectorAll("#resultsBody tr");
-        rows.forEach(row => {
-            let cols = row.querySelectorAll("td");
-            let data = Array.from(cols).map(c => c.innerText.replace('s', ''));
-            csv += data.join(",") + "\n";
-        });
+        // 1. Sort the data by netTime (Fastest to Slowest)
+        let sortedData = [...rawData].sort((a, b) => a.netTime - b.netTime);
+
+        // 2. Create CSV Header
+        let csv = "Bib,Clock Finish,Offset,Net Time,Rank,Leaderboard Bib,Leaderboard Time\n";
+
+        // 3. Loop through all raw entries, adding the sorted winner info side-by-side
+        // We use the length of rawData to ensure we capture all finishes
+        for (let i = 0; i < rawData.length; i++) {
+            let entry = rawData[i];
+            let winner = sortedData[i]; // The i-th fastest person
+
+            let line = [
+                entry.bib,
+                formatTime(entry.finishTime),
+                entry.offset,
+                formatTime(entry.netTime),
+                (i + 1), // Rank
+                winner ? winner.bib : "", // Winner's Bib
+                winner ? formatTime(winner.netTime) : "" // Winner's Time
+            ];
+            
+            csv += line.join(",") + "\n";
+        }
 
         let blob = new Blob([csv], { type: 'text/csv' });
         let url = window.URL.createObjectURL(blob);
         let a = document.createElement('a');
         a.href = url;
-        a.download = 'race_results.csv';
+        a.download = 'race_results_with_winners.csv';
         a.click();
     }
 </script>
