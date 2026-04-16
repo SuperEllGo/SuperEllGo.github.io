@@ -1,26 +1,129 @@
 <!DOCTYPE html>
-
 <html>
+<head>
+    <title>School Race Timer</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f4; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { font-size: 24px; padding: 10px; width: 80%; margin-bottom: 10px; text-align: center; }
+        button { font-size: 18px; padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        #results { margin-top: 20px; width: 100%; border-collapse: collapse; }
+        #results th, #results td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .start-btn { background: #28a745; margin-bottom: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-	<head>
-		<meta charset="UTF-8">
-		<title>Je suis Gitlliott</title>
-		<link rel="stylesheet"href="styles.css">
-		<link rel="icon" href="images/Carot.jpeg" type="image/jpeg">
-	</head>
-	
-	<body style="background-image: linear-gradient(90deg, #020024 0%, #090979 35%, #00d4ff 100%);"><!--cssgradient.io-->
-		<div class="navbar">
-			<ul>
-				<li><a href="index.html"> home</a></li>
-				<li><a href="exercice1.html"> lien au premier exercice</a></li>
-				<li><a href="exercice2.html"> lien au deuxième exercice</a></li>
-				<li><a href="exercice3.html"> lien au troisième exercice</a></li>
-				<li><a href="exercice4.html"> lien au quatrième exercice</a></li>
-			</ul>
-		</div>
-		<p>voici ma page d'acceuil, dans cette page, tu peut voir tout mes tout mes exercises html</p>
-		
-	</body>
-	
+<div class="container">
+    <h2>Race Timing System</h2>
+    <button id="startBtn" class="start-btn" onclick="startRace()">🚀 START RACE (Time Zero)</button>
+    <div id="clock" style="font-size: 32px; margin: 10px 0;">00:00:00</div>
+    
+    <input type="number" id="bibInput" placeholder="Enter Bib #" autofocus disabled>
+    <p>Press <strong>ENTER</strong> to record finish</p>
+    
+    <button onclick="downloadCSV()">📥 Download Results (CSV)</button>
+
+    <table id="results">
+        <thead>
+            <tr>
+                <th>Bib</th>
+                <th>Clock Time</th>
+                <th>Offset</th>
+                <th>Net Time</th>
+            </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+    </table>
+</div>
+
+<script>
+    let raceStartTime = null;
+    let timerInterval = null;
+
+    function startRace() {
+        raceStartTime = Date.now();
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('bibInput').disabled = false;
+        document.getElementById('bibInput').focus();
+        
+        timerInterval = setInterval(updateClock, 100);
+    }
+
+    function updateClock() {
+        let elapsed = (Date.now() - raceStartTime) / 1000;
+        document.getElementById('clock').innerText = formatTime(elapsed);
+    }
+
+    function formatTime(seconds) {
+        let h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        let m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+        let s = (seconds % 60).toFixed(2).padStart(5, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    // Logic for Wave Offsets based on your ranges
+    function getOffset(bib) {
+        // 2km Ranges
+        if (bib >= 0 && bib <= 30) return 0;
+        if (bib >= 31 && bib <= 60) return 30;
+        if (bib >= 91 && bib <= 120) return 60;
+        if (bib >= 121 && bib <= 150) return 90;
+        if (bib >= 151 && bib <= 180) return 120;
+        if (bib >= 181 && bib <= 210) return 150;
+        if (bib >= 211 && bib <= 250) return 180;
+        if (bib >= 251 && bib <= 300) return 210;
+
+        // 5km Ranges
+        if (bib >= 330 && bib <= 330) return 0; // Adjusted for your 330 start
+        if (bib >= 331 && bib <= 360) return 30;
+        if (bib >= 391 && bib <= 420) return 60;
+        if (bib >= 421 && bib <= 450) return 90;
+        if (bib >= 451 && bib <= 480) return 120;
+        if (bib >= 481 && bib <= 510) return 150;
+        if (bib >= 511 && bib <= 550) return 180;
+        if (bib >= 551 && bib <= 599) return 210;
+        
+        return 0; // Default
+    }
+
+    document.getElementById('bibInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            let bib = parseInt(this.value);
+            if (isNaN(bib)) return;
+
+            let finishTime = (Date.now() - raceStartTime) / 1000;
+            let offset = getOffset(bib);
+            let netTime = finishTime - offset;
+
+            let row = `<tr>
+                <td>${bib}</td>
+                <td>${formatTime(finishTime)}</td>
+                <td>${offset}s</td>
+                <td><strong>${formatTime(netTime)}</strong></td>
+            </tr>`;
+            
+            document.getElementById('resultsBody').insertAdjacentHTML('afterbegin', row);
+            this.value = ''; // Clear input for next runner
+        }
+    });
+
+    function downloadCSV() {
+        let csv = "Bib,Clock Time,Offset,Net Time\n";
+        let rows = document.querySelectorAll("#resultsBody tr");
+        rows.forEach(row => {
+            let cols = row.querySelectorAll("td");
+            let data = Array.from(cols).map(c => c.innerText.replace('s', ''));
+            csv += data.join(",") + "\n";
+        });
+
+        let blob = new Blob([csv], { type: 'text/csv' });
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = 'race_results.csv';
+        a.click();
+    }
+</script>
+</body>
 </html>
